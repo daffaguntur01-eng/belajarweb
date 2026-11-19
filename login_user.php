@@ -83,37 +83,89 @@ if (isset($_POST['login'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Sistem Informasi Sekolah</title>
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            min-height: 100vh;
+            background-color: #f4f7f6;
+        }
+        .login-container {
+            max-width: 1050px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 1.25rem;
+            overflow: hidden;
+        }
+        .left-banner {
+            padding: 0;
+            overflow: hidden;
+            background-color: #eaf2ff;
+        }
+        .left-banner img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Membuat gambar memenuhi seluruh kotak secara proporsional tanpa garis hitam */
+            object-position: center;
+        }
+        .btn-primary {
+            background-color: #0d6efd;
+            border: none;
+        }
+        .btn-primary:hover {
+            background-color: #0b5ed7;
+        }
+    </style>
 </head>
-<body class="bg-light d-flex align-items-center justify-content-center vh-100">
+<body class="d-flex align-items-center justify-content-center p-3">
 
-    <div class="card shadow border-0 p-4" style="width: 100%; max-width: 400px;">
-        <h3 class="text-center fw-bold mb-4 text-primary">Login Sistem</h3>
+    <div class="row login-container shadow-lg border-0 g-0">
+        <!-- Kolom Kiri: Menampilkan sipn.png agar pas memenuhi area -->
+        <div class="col-lg-6 left-banner d-none d-lg-block">
+            <img src="sipn.png" alt="Banner Login">
+        </div>
 
-        <?php if (!empty($error)): ?>
-            <div class="alert alert-danger py-2" role="alert">
-                <?= htmlspecialchars($error); ?>
-            </div>
-        <?php endif; ?>
-
-        <form action="" method="POST">
-            <div class="mb-3">
-                <label for="username" class="form-label font-weight-bold">Username / NIS</label>
-                <input type="text" name="username" id="username" class="form-control" required placeholder="Masukkan username">
+        <!-- Kolom Kanan: Form Login -->
+        <div class="col-lg-6 p-4 p-md-5 d-flex flex-column justify-content-center bg-white">
+            <div class="text-center mb-4">
+                <h4 class="fw-bold text-dark">Hai, selamat datang kembali</h4>
+                <p class="text-muted small">Belum punya akun? <a href="registasi.php" class="text-decoration-none">Daftar sebagai Siswa</a></p>
             </div>
 
-            <div class="mb-3">
-                <label for="password" class="form-label">Password</label>
-                <input type="password" name="password" id="password" class="form-control" required placeholder="Masukkan password">
-            </div>
+            <?php if (!empty($error)): ?>
+                <div class="alert alert-danger py-2 text-center small" role="alert">
+                    <?= htmlspecialchars($error); ?>
+                </div>
+            <?php endif; ?>
 
-            <button type="submit" name="login" class="btn btn-primary w-100 py-2 mt-2 fw-semibold">Login</button>
-            
-            <!-- Tambahan Tautan ke Halaman Registrasi Siswa -->
-            <div class="text-center mt-3">
-                <small class="text-muted">Belum punya akun? <a href="registasi.php" class="text-decoration-none">Daftar sebagai Siswa</a></small>
+            <form action="" method="POST">
+                <div class="mb-3">
+                    <label for="username" class="form-label text-muted small fw-semibold">Username / NIS</label>
+                    <input type="text" name="username" id="username" class="form-control py-2" required placeholder="Masukkan username atau NIS">
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <label for="password" class="form-label text-muted small fw-semibold">Password</label>
+                        <a href="#" class="small text-decoration-none text-primary">Lupa kata sandi?</a>
+                    </div>
+                    <input type="password" name="password" id="password" class="form-control py-2" required placeholder="Masukkan password">
+                </div>
+
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="remember">
+                    <label class="form-check-label text-muted small" for="remember">Ingat perangkat ini</label>
+                </div>
+
+                <button type="submit" name="login" class="btn btn-primary w-100 py-2 fw-semibold shadow-sm">Masuk</button>
+            </form>
+
+            <div class="text-center mt-4">
+                <small class="text-muted" style="font-size: 0.75rem;">
+                    Dengan melanjutkan, kamu menerima <a href="#" class="text-decoration-none">Syarat Penggunaan</a> dan <a href="#" class="text-decoration-none">Kebijakan Privasi</a> kami.
+                </small>
             </div>
-        </form>
+        </div>
     </div>
 
 </body>

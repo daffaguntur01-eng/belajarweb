@@ -14,15 +14,10 @@ if (!$is_logged_in) {
     exit();
 }
 
-// 3. Data user & guru dari session
-$user_id    = $_SESSION['user_id'] ?? 0;
-$nama_user  = $_SESSION['nama_lengkap'] ?? $_SESSION['nama'] ?? $_SESSION['username'] ?? 'Guru';
-$role_user  = strtolower($_SESSION['role'] ?? 'guru');
+// 3. Data user untuk header
+$nama_user = $_SESSION['nama_lengkap'] ?? $_SESSION['nama'] ?? $_SESSION['username'] ?? $_SESSION['nis'] ?? 'User';
+$role_user = strtolower($_SESSION['role'] ?? 'guru');
 
-// ===================================================================
-// PENGAMAN DINDING HAK AKSES (KHUSUS GURU)
-// Jika bukan guru (misal Admin atau Siswa), tolak dan kembali ke halaman sebelumnya
-// ===================================================================
 if ($role_user !== 'guru') {
     echo "<script>
             alert('Akses Ditolak! Halaman ini khusus untuk guru.');
@@ -31,7 +26,7 @@ if ($role_user !== 'guru') {
     exit();
 }
 
-$avatar_url = "https://ui-avatars.com/api/?name=" . urlencode($nama_user) . "&background=0D6EFD&color=fff";
+$avatar_url = "https://api.dicebear.com/7.x/adventurer/svg?seed=" . urlencode($nama_user);
 ?>
 
 <!DOCTYPE html>
@@ -44,181 +39,272 @@ $avatar_url = "https://ui-avatars.com/api/?name=" . urlencode($nama_user) . "&ba
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
+        :root {
+            --primary-blue: #0d6efd;
+            --bg-body: #f4f6f9;
+        }
         body {
+            background-color: var(--bg-body);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
+        }
+        
+        /* Layout Dashboard Wrapper */
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Modern */
+        .sidebar {
+            width: 260px;
+            background-color: var(--primary-blue);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            padding: 20px 0;
+        }
+
+        .sidebar-brand {
+            font-size: 1.4rem;
+            font-weight: bold;
+            padding: 0 25px 25px 25px;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex-grow: 1;
+        }
+
+        .sidebar-menu li a {
+            display: flex;
+            align-items: center;
+            padding: 12px 25px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border-top-left-radius: 30px;
+            border-bottom-left-radius: 30px;
+            margin-left: 10px;
+        }
+
+        .sidebar-menu li a:hover, 
+        .sidebar-menu li.active a {
+            color: var(--primary-blue);
+            background-color: var(--bg-body);
+        }
+
+        .sidebar-menu li a i {
+            margin-right: 12px;
+            font-size: 1.2rem;
+        }
+
+        .sidebar-footer {
+            padding: 0 25px;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .sidebar-footer a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            margin-right: 10px;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            margin-left: 260px;
+            flex-grow: 1;
+            padding: 30px;
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        /* Card / Table Wrapper Styling */
+        .card-custom {
+            background: white;
+            border-radius: 16px;
+            border: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+            padding: 24px;
+        }
+
+        /* Custom Table Styling */
+        .table {
+            border-collapse: separate;
+            border-spacing: 0 10px;
+        }
+
+        .table thead th {
+            border: none;
+            color: #8c98a4;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: transparent !important;
+        }
+
+        .table tbody tr {
             background-color: #ffffff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.01);
+            transition: transform 0.2s;
         }
-        .table th {
-            font-weight: 600;
-            background-color: #f8f9fa;
+
+        .table tbody tr td {
+            border-top: 1px solid #f0f2f5;
+            border-bottom: 1px solid #f0f2f5;
+            padding: 15px 12px;
+            vertical-align: middle;
         }
-        .table-sortable th {
-            cursor: pointer;
-            position: relative;
+
+        .table tbody tr td:first-child {
+            border-left: 1px solid #f0f2f5;
+            border-top-left-radius: 10px;
+            border-bottom-left-radius: 10px;
         }
-        .table-sortable th::after {
-            content: '♦';
-            font-size: 0.75rem;
-            color: #ccc;
-            float: right;
+
+        .table tbody tr td:last-child {
+            border-right: 1px solid #f0f2f5;
+            border-top-right-radius: 10px;
+            border-bottom-right-radius: 10px;
         }
-        #profilMenuDropdown.show {
-            display: block;
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 70px;
+            }
+            .sidebar .sidebar-brand, .sidebar .sidebar-menu span, .sidebar .sidebar-footer {
+                display: none;
+            }
+            .main-content {
+                margin-left: 70px;
+            }
         }
     </style>
 </head>
 <body>
 
-    <!-- Include Navbar Eksternal -->
-    <?php include 'navbar.php'; ?>
+    <div class="dashboard-container">
+        <!-- Memanggil Sidebar Terpusat dari navbar.php -->
+        <?php include 'navbar.php'; ?>
 
-    <!-- Konten Utama: Daftar Kelas yang Diajar -->
-    <div class="container my-5">
-        <!-- Judul Halaman -->
-        <h1 class="text-center mb-5 fw-medium" style="color: #212529;">Daftar Kelas yang Diajar</h1>
-
-        <!-- Bagian Kontrol Tabel (Filter & Pencarian) -->
-        <div class="row mb-3 align-items-center">
-            <div class="col-md-6 d-flex align-items-center mb-2 mb-md-0">
-                <span class="me-2 text-secondary">Tampilkan</span>
-                <select class="form-select form-select-sm w-auto me-2">
-                    <option value="10" selected>10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                </select>
-                <span class="text-secondary">data per halaman</span>
-            </div>
-            <div class="col-md-6 d-flex justify-content-md-end align-items-center">
-                <form method="GET" action="" class="d-flex align-items-center">
-                    <label class="me-2 text-secondary">Cari:</label>
-                    <input type="text" name="cari" class="form-control form-control-sm w-auto" value="<?= htmlspecialchars($_GET['cari'] ?? ''); ?>">
-                </form>
-            </div>
-        </div>
-
-        <!-- Tabel Data Kelas -->
-        <div class="table-responsive">
-            <table class="table table-bordered table-striped align-middle mb-0">
-                <thead>
-                    <tr class="table-sortable text-dark">
-                        <th style="width: 70px;">No</th>
-                        <th>Kelas</th>
-                        <th>Mata Pelajaran</th>
-                        <th>Jumlah Siswa</th>
-                        <th style="width: 100px;">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php
-                    $pencarian = isset($_GET['cari']) ? mysqli_real_escape_string($koneksi, $_GET['cari']) : '';
-
-                    // Query aman menggunakan JOIN ke tabel siswa dan mapel
-                    $query = "SELECT 
-                            siswa.kelas AS nama_kelas, 
-                            mengajar.mapel_id,
-                            mapel.nama_mapel,
-                            COUNT(DISTINCT siswa.id) AS total_siswa
-                          FROM mengajar 
-                          LEFT JOIN mapel ON mengajar.mapel_id = mapel.id 
-                          LEFT JOIN siswa ON mengajar.siswa_id = siswa.id 
-                          WHERE 1=1";
-
-                    if (!empty($pencarian)) {
-                        $query .= " AND (siswa.kelas LIKE '%$pencarian%' OR mapel.nama_mapel LIKE '%$pencarian%')";
-                    }
-
-                    $query .= " GROUP BY siswa.kelas, mengajar.mapel_id";
-
-                    $result = @mysqli_query($koneksi, $query);
-                    $no = 1;
-
-                    if ($result && mysqli_num_rows($result) > 0) {
-                        while ($row = mysqli_fetch_assoc($result)) {
-                            $kelas_nama  = !empty($row['nama_kelas']) ? $row['nama_kelas'] : 'XI RPL 1';
-                            $mapel_nama  = !empty($row['nama_mapel']) ? $row['nama_mapel'] : 'Basis Data';
-                            $total_siswa = ($row['total_siswa'] > 0) ? $row['total_siswa'] . ' siswa' : '3 siswa';
-                            $mapel_id    = $row['mapel_id'] ?? '';
-                            ?>
-                            <tr>
-                                <td class="fw-bold"><?= $no++; ?></td>
-                                <td><?= htmlspecialchars($kelas_nama); ?></td>
-                                <td><?= htmlspecialchars($mapel_nama); ?></td>
-                                <td><?= htmlspecialchars($total_siswa); ?></td>
-                                <td>
-                                    <a href="daftar_nilai.php?kelas=<?= urlencode($kelas_nama); ?>&mapel_id=<?= $mapel_id; ?>" class="btn btn-primary btn-sm px-3">Lihat</a>
-                                </td>
-                            </tr>
-                            <?php
-                        }
-                    } else {
-                        // Data contoh jika database belum memiliki relasi data
-                        $data_dummy = [
-                            ["no" => 1, "kelas" => "XI RPL 1", "mapel" => "Basis Data", "jumlah" => "3 siswa"],
-                            ["no" => 2, "kelas" => "XI RPL 2", "mapel" => "Basis Data", "jumlah" => "3 siswa"]
-                        ];
-
-                        foreach ($data_dummy as $row) {
-                            if (!empty($pencarian) && stripos($row['kelas'], $pencarian) === false && stripos($row['mapel'], $pencarian) === false) {
-                                continue;
-                            }
-                            ?>
-                            <tr>
-                                <td class="fw-bold"><?= $row['no']; ?></td>
-                                <td><?= htmlspecialchars($row['kelas']); ?></td>
-                                <td><?= htmlspecialchars($row['mapel']); ?></td>
-                                <td><?= htmlspecialchars($row['jumlah']); ?></td>
-                                <td>
-                                    <a href="detail_kelas.php?kelas=<?= urlencode($row['kelas']); ?>" class="btn btn-primary btn-sm px-3">Lihat</a>
-                                </td>
-                            </tr>
-                            <?php
-                        }
-                    }
-                    ?>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Bagian Paginasi -->
-        <div class="row align-items-center mt-3">
-            <div class="col-md-6 text-secondary small">
-                Menampilkan halaman 1 dari 1
-            </div>
-            <div class="col-md-6 d-flex justify-content-md-end mt-2 mt-md-0">
-                <nav aria-label="Navigasi Halaman">
-                    <ul class="pagination pagination-sm mb-0">
-                        <li class="page-item disabled"><a class="page-link text-secondary" href="#">Sebelumnya</a></li>
-                        <li class="page-item active"><a class="page-link bg-primary border-primary" href="#">1</a></li>
-                        <li class="page-item disabled"><a class="page-link text-secondary" href="#">Selanjutnya</a></li>
+        <!-- Konten Utama -->
+        <div class="main-content">
+            <!-- Header Atas -->
+            <div class="content-header">
+                <div>
+                    <h3 class="fw-bold mb-1">Daftar Kelas yang Diajar</h3>
+                    <p class="text-muted small mb-0">Kelola dan pilih kelas untuk penginputan nilai siswa</p>
+                </div>
+                
+                <!-- Profil Dropdown -->
+                <div class="dropdown">
+                    <a href="#" class="d-flex align-items-center text-dark text-decoration-none dropdown-toggle" id="btnProfilToggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <img src="<?= $avatar_url; ?>" class="rounded-circle me-2" width="40" height="40" alt="Avatar">
+                        <div>
+                            <span class="d-block fw-semibold small"><?= htmlspecialchars($nama_user); ?></span>
+                            <span class="text-muted" style="font-size: 0.75rem; text-transform: capitalize;"><?= htmlspecialchars($role_user); ?></span>
+                        </div>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" aria-labelledby="btnProfilToggle">
+                        <li><a class="dropdown-item py-2" href="profil.php"><i class="bi bi-person me-2"></i> Profil Saya</a></li>
+                        <li><a class="dropdown-item py-2" href="ubah_password.php"><i class="bi bi-key me-2"></i> Ubah Password</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item py-2 text-danger" href="logout.php"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
                     </ul>
-                </nav>
+                </div>
+            </div>
+
+            <!-- Bagian Konten Tabel Kelas -->
+            <div class="card-custom mb-4">
+                <div class="row mb-4 align-items-center">
+                    <div class="col-md-6 d-flex align-items-center">
+                        <span class="me-2 text-muted small">Tampilkan</span>
+                        <select class="form-select form-select-sm w-auto me-2">
+                            <option value="10" selected>10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                        </select>
+                        <span class="text-muted small">data per halaman</span>
+                    </div>
+                    <div class="col-md-6 d-flex justify-content-md-end align-items-center mt-3 mt-md-0">
+                        <form method="GET" action="" class="d-flex align-items-center w-100 justify-content-end">
+                            <label class="me-2 text-muted small">Cari:</label>
+                            <input type="text" name="cari" class="form-control form-control-sm w-auto" placeholder="Cari kelas / mapel..." value="<?= htmlspecialchars($_GET['cari'] ?? ''); ?>">
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Tabel Kelas yang Diajar -->
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">No</th>
+                                <th>Kelas</th>
+                                <th>Mata Pelajaran</th>
+                                <th>Jumlah Siswa</th>
+                                <th class="text-end">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Contoh data statis/dinamis tabel kelas Anda -->
+                            <tr>
+                                <td>1</td>
+                                <td class="fw-semibold">xi rpl 4</td>
+                                <td>Basis Data</td>
+                                <td>1 siswa</td>
+                                <td class="text-end">
+                                    <a href="daftar_nilai.php" class="btn btn-sm btn-primary px-3">Lihat</a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td class="fw-semibold">XII RPL 2</td>
+                                <td>Basis Data</td>
+                                <td>2 siswa</td>
+                                <td class="text-end">
+                                    <a href="daftar_nilai.php" class="btn btn-sm btn-primary px-3">Lihat</a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Bagian Paginasi Bawah -->
+                <div class="row align-items-center mt-4">
+                    <div class="col-md-6 text-muted small">
+                        Menampilkan halaman <strong>1</strong> dari <strong>1</strong>
+                    </div>
+                    <div class="col-md-6 d-flex justify-content-md-end">
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item disabled"><a class="page-link" href="#">Sebelumnya</a></li>
+                                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                                <li class="page-item disabled"><a class="page-link" href="#">Selanjutnya</a></li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
             </div>
         </div>
-
     </div>
 
     <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- Script Profil Dropdown -->
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const btnToggle = document.getElementById("btnProfilToggle");
-            const menuDropdown = document.getElementById("profilMenuDropdown");
-
-            if (btnToggle && menuDropdown) {
-                btnToggle.addEventListener("click", function (e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    menuDropdown.classList.toggle("show");
-                });
-
-                document.addEventListener("click", function (e) {
-                    if (!btnToggle.contains(e.target) && !menuDropdown.contains(e.target)) {
-                        menuDropdown.classList.remove("show");
-                    }
-                });
-            }
-        });
-    </script>
 </body>
 </html>

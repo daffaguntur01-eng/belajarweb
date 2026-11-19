@@ -1,96 +1,64 @@
 <?php
-// Jalankan session jika belum dimulai
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-
 include 'koneksi.php';
 
-// Cek status login
-$is_logged_in = isset($_SESSION['user_id']) || isset($_SESSION['nis']) || isset($_SESSION['nama']); 
-
+$is_logged_in = isset($_SESSION['user_id']) || isset($_SESSION['nis']) || isset($_SESSION['nama']) || isset($_SESSION['username']); 
 if (!$is_logged_in) {
     header("Location: login_user.php");
     exit();
 }
 
-// Ambil data user dari session
 $nama_user = $_SESSION['nama_lengkap'] ?? $_SESSION['nama'] ?? $_SESSION['username'] ?? $_SESSION['nis'] ?? 'Admin';
 $role_user = strtolower($_SESSION['role'] ?? '');
 
-// ===================================================================
-// PENGAMAN DINDING HAK AKSES (KHUSUS ADMIN)
-// Jika bukan admin (misal Guru atau Siswa), tolak dan kembali ke halaman sebelumnya
-// ===================================================================
 if ($role_user !== 'admin') {
-    echo "<script>
-            alert('Akses Ditolak! Halaman ini khusus untuk Admin.');
-            window.history.back();
-          </script>";
+    echo "<script>alert('Akses Ditolak! Halaman ini khusus untuk Admin.'); window.history.back();</script>";
     exit();
 }
 
-// URL Avatar Otomatis mengikuti Nama User
-$avatar_url = "https://ui-avatars.com/api/?name=" . urlencode($nama_user) . "&background=0D6EFD&color=fff";
+$avatar_url = "https://api.dicebear.com/7.x/adventurer/svg?seed=" . urlencode($nama_user);
 ?>
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Tambah Data User</title>
-    <!-- IMPORT BOOTSTRAP 5 & ICONS (Wajib agar navbar berfungsi) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tambahkan user3 (Dynamic Form) - SIPN</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f9f9f9; }
-        .form-container { max-width: 400px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); margin: 40px auto; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        
-        /* Style Tombol Simpan */
-        button { 
-            background-color: #007bff; 
-            color: white; 
-            padding: 10px 15px; 
-            border: none; 
-            border-radius: 4px; 
-            cursor: pointer; 
-            width: 100%; 
-            margin-top: 10px; 
-            font-size: 14px;
+        :root { --primary-blue: #0d6efd; --bg-body: #f4f6f9; }
+        body { background-color: var(--bg-body); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow-x: hidden; }
+        .dashboard-container { display: flex; min-height: 100vh; }
+        .sidebar { width: 260px; background-color: var(--primary-blue); color: white; display: flex; flex-direction: column; justify-content: space-between; position: fixed; top: 0; bottom: 0; left: 0; z-index: 100; padding: 20px 0; overflow-y: auto; }
+        .sidebar-brand { font-size: 1.4rem; font-weight: bold; padding: 0 25px 25px 25px; letter-spacing: 0.5px; }
+        .sidebar-menu { list-style: none; padding: 0; margin: 0; flex-grow: 1; }
+        .sidebar-menu li a { display: flex; align-items: center; padding: 12px 25px; color: rgba(255, 255, 255, 0.8); text-decoration: none; font-weight: 500; transition: all 0.3s ease; border-top-left-radius: 30px; border-bottom-left-radius: 30px; margin-left: 10px; }
+        .sidebar-menu li a:hover, .sidebar-menu li.active > a { color: var(--primary-blue); background-color: var(--bg-body); }
+        .sidebar-menu li a i { margin-right: 12px; font-size: 1.2rem; }
+        .sidebar-submenu { list-style: none; padding-left: 0; margin: 5px 0 5px 20px; }
+        .sidebar-submenu li a { padding: 8px 20px; font-size: 0.9rem; border-radius: 20px; color: rgba(255, 255, 255, 0.7); }
+        .sidebar-submenu li a:hover, .sidebar-submenu li a.active { color: #ffffff; background-color: rgba(255, 255, 255, 0.1); }
+        .sidebar-footer { padding: 20px 25px 0 25px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.7); }
+        .sidebar-footer a { color: rgba(255, 255, 255, 0.8); text-decoration: none; margin-right: 10px; }
+        .main-content { margin-left: 260px; flex-grow: 1; padding: 30px; }
+        .content-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .card-custom { background: white; border-radius: 16px; border: none; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03); padding: 30px; max-width: 600px; }
+        .role-only { display: none; background: #f0f7ff; padding: 15px; border-left: 4px solid #0d6efd; border-radius: 8px; margin-top: 15px; }
+        @media (max-width: 768px) {
+            .sidebar { width: 70px; }
+            .sidebar .sidebar-brand, .sidebar .sidebar-menu span, .sidebar .sidebar-footer { display: none; }
+            .main-content { margin-left: 70px; }
         }
-        button:hover { background-color: #0056b3; }
-        
-        /* Style Tombol Kembali */
-        .btn-secondary-custom { 
-            display: block;
-            text-align: center;
-            background-color: #6c757d; 
-            color: white; 
-            padding: 10px 15px; 
-            border-radius: 4px; 
-            text-decoration: none; 
-            width: 100%; 
-            margin-top: 10px; 
-            box-sizing: border-box;
-            font-size: 14px;
-        }
-        .btn-secondary-custom:hover { background-color: #5a6268; color: white; }
-
-        /* CSS untuk area form dinamis */
-        .role-only { display: none; background: #f0f7ff; padding: 10px; border-left: 4px solid #007bff; border-radius: 4px; margin-top: 10px; }
     </style>
     <script>
         function tampilkanFormTambahan() {
             var role = document.getElementById("role").value;
-            
             var formSiswa = document.getElementById("form_tambahan_siswa");
             var formGuru = document.getElementById("form_tambahan_guru");
             var formJk = document.getElementById("form_jk");
-            
             var inputNis = document.getElementById("nis");
             var inputKelas = document.getElementById("kelas");
             var inputNip = document.getElementById("nip");
@@ -100,103 +68,104 @@ $avatar_url = "https://ui-avatars.com/api/?name=" . urlencode($nama_user) . "&ba
                 formSiswa.style.display = "block";
                 formGuru.style.display = "none";
                 formJk.style.display = "block";
-                
-                inputNis.required = true;
-                inputKelas.required = true;
-                inputJk.required = true;
-                inputNip.required = false;
-
+                inputNis.required = true; inputKelas.required = true; inputJk.required = true; inputNip.required = false;
             } else if (role === "guru") {
                 formGuru.style.display = "block";
                 formSiswa.style.display = "none";
                 formJk.style.display = "block";
-                
-                inputNip.required = true;
-                inputJk.required = true;
-                inputNis.required = false;
-                inputKelas.required = false;
-
+                inputNip.required = true; inputJk.required = true; inputNis.required = false; inputKelas.required = false;
             } else {
                 formSiswa.style.display = "none";
                 formGuru.style.display = "none";
                 formJk.style.display = "none";
-                
-                inputNis.required = false;
-                inputKelas.required = false;
-                inputNip.required = false;
-                inputJk.required = false;
+                inputNis.required = false; inputKelas.required = false; inputNip.required = false; inputJk.required = false;
             }
         }
     </script>
 </head>
 <body>
-
-<!-- NAVBAR DIPANGGIL DI SINI SEBELUM FORM -->
-<?php require_once ('navbar copy.php');?>
-
-<div class="form-container">
-    <h2>Form Isi Data Users</h2>
-    <!-- Action disesuaikan ke file pemproses proses_simpan.php -->
-    <form action="proses_simpan.php" method="POST">
-        <div class="form-group">
-            <label for="username">Username / Nama Lengkap</label>
-            <input type="text" id="username" name="username" required placeholder="Contoh: malikal">
-        </div>
-
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" required placeholder="Masukkan password akun">
-        </div>
-
-        <div class="form-group">
-            <label for="role">Role</label>
-            <select id="role" name="role" onchange="tampilkanFormTambahan()" required>
-                <option value="">-- Pilih Role --</option>
-                <option value="admin">Admin</option>
-                <option value="guru">Guru</option>
-                <option value="siswa">Siswa</option>
-            </select>
-        </div>
-
-        <!-- FORM TAMBAHAN KHUSUS SISWA -->
-        <div id="form_tambahan_siswa" class="role-only">
-            <p style="margin-top:0; font-weight:bold; color:#007bff;">Data Tambahan Siswa:</p>
-            <div class="form-group">
-                <label for="nis">NIS</label>
-                <input type="text" id="nis" name="nis" placeholder="Contoh: 12200341">
+    <div class="dashboard-container">
+        <?php include 'navbar.php'; ?>
+        <div class="main-content">
+            <div class="content-header">
+                <div>
+                    <h3 class="fw-bold mb-1">Form Tambah Data User (Dinamis)</h3>
+                    <p class="text-muted small mb-0">Pilih role untuk menampilkan form input spesifik</p>
+                </div>
+                <div class="dropdown">
+                    <a href="#" class="d-flex align-items-center text-dark text-decoration-none dropdown-toggle" id="btnProfilToggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <img src="<?= $avatar_url; ?>" class="rounded-circle me-2 shadow-sm bg-light" width="40" height="40" alt="Avatar">
+                        <div>
+                            <span class="d-block fw-semibold small"><?= htmlspecialchars($nama_user); ?></span>
+                            <span class="text-muted" style="font-size: 0.75rem; text-transform: capitalize;"><?= htmlspecialchars($role_user); ?></span>
+                        </div>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" aria-labelledby="btnProfilToggle">
+                        <li><a class="dropdown-item py-2" href="profil.php"><i class="bi bi-person me-2"></i> Profil Saya</a></li>
+                        <li><a class="dropdown-item py-2" href="pengaturan.php"><i class="bi bi-gear me-2"></i> Pengaturan</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item py-2 text-danger" href="logout.php"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
+                    </ul>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="kelas">Kelas</label>
-                <input type="text" id="kelas" name="kelas" placeholder="Contoh: XI-RPL 1">
+
+            <div class="card card-custom shadow-sm border-0 rounded-4 bg-white">
+                <form action="proses_simpan.php" method="POST">
+                    <div class="mb-3">
+                        <label for="username" class="form-label small fw-medium text-muted">Username / Nama Lengkap</label>
+                        <input type="text" class="form-control" id="username" name="username" required placeholder="Contoh: malikal">
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label small fw-medium text-muted">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required placeholder="Masukkan password akun">
+                    </div>
+                    <div class="mb-3">
+                        <label for="role" class="form-label small fw-medium text-muted">Role</label>
+                        <select class="form-select" id="role" name="role" onchange="tampilkanFormTambahan()" required>
+                            <option value="">-- Pilih Role --</option>
+                            <option value="admin">Admin</option>
+                            <option value="guru">Guru</option>
+                            <option value="siswa">Siswa</option>
+                        </select>
+                    </div>
+
+                    <div id="form_tambahan_siswa" class="role-only">
+                        <p class="fw-bold text-primary small mb-3">Data Tambahan Siswa:</p>
+                        <div class="mb-3">
+                            <label for="nis" class="form-label small fw-medium text-muted">NIS</label>
+                            <input type="text" class="form-control" id="nis" name="nis" placeholder="Contoh: 12200341">
+                        </div>
+                        <div class="mb-3">
+                            <label for="kelas" class="form-label small fw-medium text-muted">Kelas</label>
+                            <input type="text" class="form-control" id="kelas" name="kelas" placeholder="Contoh: XI-RPL 1">
+                        </div>
+                    </div>
+
+                    <div id="form_tambahan_guru" class="role-only">
+                        <p class="fw-bold text-primary small mb-3">Data Tambahan Guru:</p>
+                        <div class="mb-3">
+                            <label for="nip" class="form-label small fw-medium text-muted">NIP</label>
+                            <input type="text" class="form-control" id="nip" name="nip" placeholder="Contoh: 198503302010011002">
+                        </div>
+                    </div>
+
+                    <div id="form_jk" class="mb-4" style="display: none;">
+                        <label for="jenis_kelamin" class="form-label small fw-medium text-muted">Jenis Kelamin</label>
+                        <select class="form-select" id="jenis_kelamin" name="jenis_kelamin">
+                            <option value="">-- Pilih JK --</option>
+                            <option value="L">Laki-laki (L)</option>
+                            <option value="P">Perempuan (P)</option>
+                        </select>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="button" onclick="history.back()" class="btn btn-outline-secondary w-50 py-2">Kembali</button>
+                        <button type="submit" name="submit" class="btn btn-primary w-50 py-2 fw-medium shadow-sm">Simpan Data</button>
+                    </div>
+                </form>
             </div>
         </div>
-
-        <!-- FORM TAMBAHAN KHUSUS GURU -->
-        <div id="form_tambahan_guru" class="role-only">
-            <p style="margin-top:0; font-weight:bold; color:#007bff;">Data Tambahan Guru:</p>
-            <div class="form-group">
-                <label for="nip">NIP</label>
-                <input type="text" id="nip" name="nip" placeholder="Contoh: 198503302010011002">
-            </div>
-        </div>
-
-        <!-- JENIS KELAMIN (DITAMPILKAN HANYA UNTUK SISWA / GURU) -->
-        <div id="form_jk" class="form-group" style="display: none;">
-            <label for="jenis_kelamin">Jenis Kelamin</label>
-            <select id="jenis_kelamin" name="jenis_kelamin">
-                <option value="">-- Pilih JK --</option>
-                <option value="L">Laki-laki (L)</option>
-                <option value="P">Perempuan (P)</option>
-            </select>
-        </div>
-
-        <button type="submit" name="submit">Simpan Data</button>
-        <a href="tabel%20copy.php" class="btn-secondary-custom">Kembali</a>
-    </form>
-</div>
-
-<!-- Bootstrap JS Bundle (Wajib agar dropdown navbar berfungsi) -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
